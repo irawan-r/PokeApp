@@ -24,7 +24,6 @@ data class PokemonPoster(
 
 	fun getPokeId(): Int? {
 		val id = url?.split("/".toRegex())?.dropLast(1)?.last()?.toIntOrNull()
-		println("poke id get $id")
 		return id
 	}
 }

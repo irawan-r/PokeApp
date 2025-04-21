@@ -1,11 +1,13 @@
 package com.amora.pokeapp.ui.details
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -34,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,10 +45,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -57,6 +63,8 @@ import com.amora.pokeapp.repository.model.PokeMark
 import com.amora.pokeapp.ui.utils.convertHeight
 import com.amora.pokeapp.ui.utils.convertWeight
 import com.amora.pokeapp.ui.utils.randomColor
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun PokemonDetails(
@@ -64,17 +72,26 @@ fun PokemonDetails(
     viewModel: DetailsViewModel,
     pressOnBack: () -> Unit = {}
 ) {
+    var index by remember { mutableStateOf(poke.id) }
+    val swipeAnim = remember { Animatable(0f) }
 
-    val details by viewModel.posterDetailsFlow.collectAsStateWithLifecycle(initialValue = null)
+    LaunchedEffect(poke, index) {
+        viewModel.loadPosterByName(poke.copy(id = index))
+    }
+
+    val details by viewModel.posterDetailsFlow.collectAsState(initial = null)
+
     details?.let {
-        PokemonDetailsBody(poster = it, pressOnBack = pressOnBack)
+        PokemonDetailsBody(
+            poster = it,
+            pressOnBack = pressOnBack,
+            index = index,
+            onSwipeIndexChanged = { newInd ->
+                index = newInd
+            },
+            initialOffset = swipeAnim.value
+        )
     }
-
-    LaunchedEffect(key1 = poke) {
-        println("poke details $poke")
-        viewModel.loadPosterByName(poke)
-    }
-
 }
 
 @Composable
@@ -84,10 +101,6 @@ fun StatAnimatedProgressBar(statName: String, statValue: Int, maxStatValue: Int 
     LaunchedEffect(statValue) {
         val calculated = statValue / maxStatValue.toFloat()
         progress = calculated
-    }
-
-    LaunchedEffect(Unit) {
-        progress = statValue / maxStatValue.toFloat()
     }
 
     val animatedProgress by animateFloatAsState(
@@ -121,7 +134,7 @@ fun StatAnimatedProgressBar(statName: String, statValue: Int, maxStatValue: Int 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(20.dp)
+                .height(25.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.LightGray)
         ) {
@@ -133,9 +146,15 @@ fun StatAnimatedProgressBar(statName: String, statValue: Int, maxStatValue: Int 
                 contentAlignment = Alignment.CenterEnd
             ) {
                 if (animatedProgress > 0.05f) {
-                    val animatedStatValue = (animatedProgress * statValue.toFloat()).toInt()
+                    val progressValue = (animatedProgress * maxStatValue).toInt()
+                    val animatedStatValue = minOf(progressValue, maxStatValue)
+                    val realProgress = if (animatedStatValue == maxStatValue) {
+                        "Max"
+                    } else {
+                        "$animatedStatValue"
+                    }
                     Text(
-                        text = "$animatedStatValue",
+                        text = realProgress,
                         modifier = Modifier.padding(end = 8.dp),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
@@ -149,18 +168,63 @@ fun StatAnimatedProgressBar(statName: String, statValue: Int, maxStatValue: Int 
 @Composable
 private fun PokemonDetailsBody(
     poster: PokemonCompleteDetails,
-    pressOnBack: () -> Unit = {}
+    pressOnBack: () -> Unit = {},
+    index: Int,
+    onSwipeIndexChanged: (Int) -> Unit,
+    initialOffset: Float = 0f
 ) {
     val randomColorBackground = remember { mutableStateOf(randomColor()) }
     val randomColorSubTitle = remember { mutableStateOf(randomColor()) }
 
-    PokemonDetailsContent(
-        modifier = Modifier.fillMaxSize(),
-        poster = poster,
-        randomColorBackground = randomColorBackground.value,
-        randomColorSubTitle = randomColorSubTitle.value,
-        pressOnBack = pressOnBack
-    )
+    val scope = rememberCoroutineScope()
+    val offsetX = remember { Animatable(initialOffset) }
+
+    val gestureModifier = Modifier.pointerInput(index) {
+        detectHorizontalDragGestures(
+            onHorizontalDrag = { _, dragAmount ->
+                scope.launch {
+                    offsetX.snapTo(offsetX.value + dragAmount)
+                }
+            },
+            onDragEnd = {
+                scope.launch {
+                    val threshold = 200
+                    when {
+                        offsetX.value < -threshold -> {
+                            onSwipeIndexChanged(index.inc())
+                            offsetX.snapTo(0f)
+                        }
+                        offsetX.value > threshold && index > 1 -> {
+                            onSwipeIndexChanged(index.dec())
+                            offsetX.snapTo(0f)
+                        }
+                        else -> {
+                            offsetX.animateTo(0f, animationSpec = tween(300))
+                        }
+                    }
+                }
+            },
+            onDragCancel = {
+                scope.launch {
+                    offsetX.animateTo(0f, animationSpec = tween(300))
+                }
+            }
+        )
+    }
+
+    Box(
+        modifier = gestureModifier
+            .fillMaxSize()
+            .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+    ) {
+        PokemonDetailsContent(
+            modifier = Modifier.fillMaxSize(),
+            poster = poster,
+            randomColorBackground = randomColorBackground.value,
+            randomColorSubTitle = randomColorSubTitle.value,
+            pressOnBack = pressOnBack
+        )
+    }
 }
 
 @Composable
@@ -363,4 +427,3 @@ private fun PokemonDetailsContent(
         }
     }
 }
-

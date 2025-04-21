@@ -53,10 +53,16 @@ class MainRepositoryImpl @Inject constructor(
         poke: PokeMark
     ): Flow<PokemonCompleteDetails?> {
         return flow {
-            val pokemonDetails = apiService.getPokemonDetails(poke.name)
+            val pokemonLocal = database.pokemonDao().getPokemonById(poke.id)
+            val pokeName = if (pokemonLocal != null) {
+                pokemonLocal.name
+            } else {
+                poke.name
+            }
+            val pokemonDetails = apiService.getPokemonDetails(pokeName.orEmpty())
             val localPokemonDetails =
-                database.pokemonDao().getPokemonDetailsComplete(poke.id)
-            if (localPokemonDetails != null) {
+                database.pokemonDao().getPokemonDetailsComplete(poke.id, poke.name)
+            if (localPokemonDetails != null && pokemonLocal?.pokeId != null && pokemonLocal.pokeId != 0) {
                 emit(localPokemonDetails)
             } else {
                 pokemonDetails.suspendOnSuccess {

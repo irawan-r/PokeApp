@@ -34,9 +34,11 @@ interface PokemonDao {
 		insertTypesItem(pokemonCompleteDetails.types)
 	}
 
-	@Transaction
-	@Query("SELECT * FROM details WHERE id = :pokeId")
-	suspend fun getPokemonDetailsComplete(pokeId: Int): PokemonCompleteDetails?
+	@Query("SELECT * FROM details WHERE id = :pokeId AND name = :pokeName")
+	suspend fun getPokemonDetailsComplete(pokeId: Int, pokeName: String): PokemonCompleteDetails?
+
+	@Query("SELECT * FROM pokemon WHERE pokeId = :pokeId")
+	suspend fun getPokemonById(pokeId: Int): PokemonEntity?
 
 	@Query("SELECT * FROM pokemon")
 	fun getAllPokemon(): PagingSource<Int, PokemonEntity>

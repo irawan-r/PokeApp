@@ -5,6 +5,6 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class PokeMark(
-	val id: Int,
-	val name: String
+	val id: Int = 0,
+	val name: String = ""
 ): Parcelable

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,7 +24,7 @@ class DetailsViewModel @Inject constructor(
 	private val pokeNameSharedFlow: MutableSharedFlow<PokeMark> = MutableSharedFlow(replay = 1)
 
 	@OptIn(ExperimentalCoroutinesApi::class)
-	val posterDetailsFlow = pokeNameSharedFlow.flatMapLatest {
+	val posterDetailsFlow = pokeNameSharedFlow.flatMapConcat {
 		repository.getPokemonDetails(it)
 	}
 

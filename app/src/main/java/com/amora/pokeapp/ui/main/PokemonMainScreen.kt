@@ -149,7 +149,7 @@ fun NavGraphBuilder.mainGraph(
 
             PokemonDetails(
                 poke = PokeMark(id = pokeId.toInt(), name = pokeName),
-                viewModel = hiltViewModel(),
+                viewModel = hiltViewModel()
             ) {
                 navController.navigateUp()
             }
