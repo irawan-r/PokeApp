@@ -1,0 +1,16 @@
+package com.amora.pokeapp.repository
+
+import androidx.paging.PagingData
+import com.amora.pokeapp.persistence.entity.PokemonCompleteDetails
+import com.amora.pokeapp.persistence.entity.PokemonEntity
+import com.amora.pokeapp.persistence.entity.UserEntity
+import com.amora.pokeapp.repository.model.PokeMark
+import kotlinx.coroutines.flow.Flow
+
+interface MainRepository {
+	fun getPokemons(page: Int = 0): Flow<PagingData<PokemonEntity>>
+
+	fun getPokemonDetails(poke: PokeMark): Flow<PokemonCompleteDetails?>
+
+	suspend fun getCurrentUser(): UserEntity?
+}
