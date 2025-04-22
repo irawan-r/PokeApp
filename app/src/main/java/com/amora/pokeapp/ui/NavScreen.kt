@@ -17,6 +17,7 @@ sealed class NavScreen(val route: String) {
 		const val name: String = "pokeName"
 		const val id: String = "pokeId"
 	}
+	object SearchPokemon: NavScreen("main/search")
 
 	companion object {
 		fun createRoute(pokeId: Int, pokeName: String): String {

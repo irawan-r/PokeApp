@@ -8,6 +8,8 @@ import com.amora.pokeapp.repository.model.PokeMark
 import kotlinx.coroutines.flow.Flow
 
 interface MainRepository {
+	fun searchPokemon(name: String, page: Int = 10): Flow<PagingData<PokemonEntity>>
+
 	fun getPokemons(page: Int = 0): Flow<PagingData<PokemonEntity>>
 
 	fun getPokemonDetails(poke: PokeMark): Flow<PokemonCompleteDetails?>

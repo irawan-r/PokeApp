@@ -27,7 +27,7 @@ class AuthViewModel @Inject constructor(
     val isLoggedIn: StateFlow<Boolean?> = _isLoggedIn.asStateFlow()
 
     private val _authState: MutableSharedFlow<UserAccount> = MutableSharedFlow()
-    val loginState: Flow<UiState> = _authState.flatMapConcat { user ->
+    val loginState: Flow<UiState<String>> = _authState.flatMapConcat { user ->
         flow {
             emit(UiState.Loading)
             val result = authRepo.login(user.name, user.pass)
@@ -40,7 +40,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    val regisState: Flow<UiState> = _authState.flatMapConcat { user ->
+    val regisState: Flow<UiState<String>> = _authState.flatMapConcat { user ->
         flow {
             emit(UiState.Loading)
             val result = authRepo.register(user.name, user.pass)

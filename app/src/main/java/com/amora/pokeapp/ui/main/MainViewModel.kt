@@ -4,7 +4,6 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -50,6 +49,5 @@ class MainViewModel @Inject constructor(
 	fun selectTab(@StringRes tab: Int) {
 		_selectedTab.value = tab
 	}
-
 
 }

@@ -34,7 +34,7 @@ fun RegisterScreen(
     snackbarHostState: SnackbarHostState,
     onRegisterSuccess: (Boolean) -> Unit,
 ) {
-    val registerState by viewModel.regisState.collectAsStateWithLifecycle(initialValue = UiState.Idle)
+    val registerState: UiState<String> by viewModel.regisState.collectAsStateWithLifecycle(initialValue = UiState.Idle)
     var name by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
@@ -68,7 +68,7 @@ private fun RegisterForm(
     onNameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
-    regisState: UiState,
+    regisState: UiState<String>,
     snackbarHostState: SnackbarHostState
 ) {
     LaunchedEffect(regisState) {

@@ -9,6 +9,7 @@ import com.amora.pokeapp.persistence.PokemonDatabase
 import com.amora.pokeapp.persistence.entity.PokemonCompleteDetails
 import com.amora.pokeapp.persistence.entity.PokemonEntity
 import com.amora.pokeapp.persistence.entity.UserEntity
+import com.amora.pokeapp.repository.DataMapper.toAbilitiesEntities
 import com.amora.pokeapp.repository.DataMapper.toListStatsItemEntity
 import com.amora.pokeapp.repository.DataMapper.toListTypeEntity
 import com.amora.pokeapp.repository.DataMapper.toPokemonCompleteDetails
@@ -24,12 +25,29 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
 
+@OptIn(ExperimentalPagingApi::class)
 class MainRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
     private val database: PokemonDatabase
 ) : MainRepository {
+    override fun searchPokemon(name: String, page: Int): Flow<PagingData<PokemonEntity>> {
+        return flow {
+            val pager = Pager(
+                config = PagingConfig(pageSize = PAGE_SIZE),
+                remoteMediator = PokemonRemoteMediator(
+                    database = database,
+                    apiService = apiService,
+                    page = page
+                ),
+                pagingSourceFactory = {
+                    database.pokemonDao().getAllPokemon()
+                }
+            )
+            emitAll(pager.flow)
+        }.flowOn(Dispatchers.IO)
+    }
 
-    @OptIn(ExperimentalPagingApi::class)
+
     override fun getPokemons(
         page: Int
     ): Flow<PagingData<PokemonEntity>> {
@@ -69,7 +87,8 @@ class MainRepositoryImpl @Inject constructor(
                     val detailsData = PokemonCompleteDetails(
                         pokemonDetails = data.toPokemonDetailsEntity(),
                         stats = data.stats.toListStatsItemEntity(data),
-                        types = data.types.toListTypeEntity(data.id)
+                        types = data.types.toListTypeEntity(data.id),
+                        abilities = data.abilities.toAbilitiesEntities(data.id)
                     )
                     database.pokemonDao().insertCompletePokemonDetails(detailsData)
                     emit(data.toPokemonCompleteDetails())

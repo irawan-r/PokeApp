@@ -46,7 +46,8 @@ import com.amora.pokeapp.ui.main.MainViewModel
 @Composable
 fun Posters(
     viewModel: MainViewModel,
-    selectedPoster: (PokeMark?) -> Unit
+    selectedPoster: (PokeMark?) -> Unit,
+    selectSearch: () -> Unit
 ) {
     val selectedTab = HomeTab.getTabFromSource(viewModel.selectedTab.value)
     val tabs = HomeTab.values().toList()
@@ -71,6 +72,7 @@ fun Posters(
         tabs = tabs,
         viewModel = viewModel,
         selectedTab = selectedTab,
+        selectSearchButton = selectSearch,
         selectedPoster = selectedPoster
     )
 }
@@ -83,6 +85,7 @@ fun MainScreen(
     tabs: List<HomeTab>,
     selectedTab: HomeTab,
     viewModel: MainViewModel,
+    selectSearchButton: () -> Unit,
     selectedPoster: (PokeMark?) -> Unit
 ) {
     ConstraintLayout(
@@ -152,10 +155,7 @@ fun MainScreen(
         }
 
         FloatingActionButton(
-            onClick = {
-                // Navigate to Search screen (implement navigation logic)
-//                viewModel.navigateToSearch()
-            },
+            onClick = selectSearchButton,
             modifier = Modifier.constrainAs(fabRef) {
                 start.linkTo(parent.start, margin = 16.dp)
                 end.linkTo(parent.end, margin = 16.dp)

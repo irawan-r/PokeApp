@@ -30,6 +30,7 @@ import com.amora.pokeapp.ui.login.LoginScreen
 import com.amora.pokeapp.ui.login.PokeSnackbar
 import com.amora.pokeapp.ui.posters.Posters
 import com.amora.pokeapp.ui.registration.RegisterScreen
+import com.amora.pokeapp.ui.search.SearchScreen
 import com.amora.pokeapp.ui.utils.InternetStatus
 import com.amora.pokeapp.ui.utils.orFalse
 import com.amora.pokeapp.ui.utils.showInternetStatus
@@ -72,7 +73,6 @@ fun PokemonMainScreen() {
     val onlineState by mainViewModel.isOnline.collectAsState()
 
     LaunchedEffect(onlineState) {
-        if (onlineState is InternetStatus.Idle) return@LaunchedEffect
         snackbarHostState.showInternetStatus(onlineState)
 
     }
@@ -131,6 +131,9 @@ fun NavGraphBuilder.mainGraph(
                 selectedPoster = { data ->
                     val route = NavScreen.createRoute(data?.id ?: 0, data?.name.orEmpty())
                     navController.navigate(route)
+                },
+                selectSearch = {
+                    navController.navigate(NavScreen.SearchPokemon.route)
                 }
             )
             homeContent.invoke()
@@ -145,15 +148,20 @@ fun NavGraphBuilder.mainGraph(
         ) { backStackEntry ->
             val pokeName = backStackEntry.arguments?.getString(NavScreen.PokemonDetails.name)
             val pokeId = backStackEntry.arguments?.getInt(NavScreen.PokemonDetails.id)
-            if (pokeName == null || pokeId == null) return@composable
 
             PokemonDetails(
-                poke = PokeMark(id = pokeId.toInt(), name = pokeName),
+                poke = PokeMark(id = pokeId ?: 0, name = pokeName.orEmpty()),
                 viewModel = hiltViewModel()
             ) {
                 navController.navigateUp()
             }
             detailContent.invoke()
+        }
+
+        composable(NavScreen.SearchPokemon.route) {
+            SearchScreen(viewModel = hiltViewModel()) {
+                navController.navigateUp()
+            }
         }
     }
 }
@@ -168,9 +176,10 @@ fun NavGraphBuilder.authGraph(navController: NavController, snackbarHostState: S
                 viewModel = hiltViewModel(),
                 snackbarHostState = snackbarHostState,
                 onLoginSuccess = { isLoggedIn ->
-                    if (!isLoggedIn) return@LoginScreen
-                    navController.navigate(NavScreen.MainRoot.route) {
-                        popUpTo(NavScreen.AuthRoot.route) { inclusive = true }
+                    if (isLoggedIn) {
+                        navController.navigate(NavScreen.MainRoot.route) {
+                            popUpTo(NavScreen.AuthRoot.route) { inclusive = true }
+                        }
                     }
                 },
                 onNavigateToRegister = {
@@ -184,8 +193,9 @@ fun NavGraphBuilder.authGraph(navController: NavController, snackbarHostState: S
                 viewModel = hiltViewModel(),
                 snackbarHostState = snackbarHostState,
                 onRegisterSuccess = { isSuccess ->
-                    if (!isSuccess) return@RegisterScreen
-                    navController.navigateUp()
+                    if (isSuccess) {
+                        navController.navigateUp()
+                    }
                 }
             )
         }

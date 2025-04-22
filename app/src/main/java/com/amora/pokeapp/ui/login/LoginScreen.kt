@@ -15,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,7 +42,7 @@ fun LoginScreen(
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    val loginState by viewModel.loginState.collectAsStateWithLifecycle(initialValue = UiState.Idle)
+    val loginState: UiState<String> by viewModel.loginState.collectAsStateWithLifecycle(initialValue = UiState.Idle)
 
     LaunchedEffect(loginState) {
         onLoginSuccess(loginState is UiState.Success)
@@ -76,7 +75,7 @@ fun LoginForm(
     password: String,
     onNameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
-    loginState: UiState,
+    loginState: UiState<String>,
     onLoginClick: () -> Unit,
     navigateToRegister: () -> Unit,
     snackbarHostState: SnackbarHostState
