@@ -12,7 +12,10 @@ data class PokemonCompleteDetails(
 	val stats: List<StatsItemEntity>,
 
 	@Relation(parentColumn = "remote_id", entityColumn = "fkId")
-	val types: List<TypesEntity>
+	val types: List<TypesEntity>,
+
+	@Relation(parentColumn = "remote_id", entityColumn = "fkId")
+	val abilities: List<AbilityEntity>
 ) {
 	companion object {
 		fun PokemonCompleteDetails.getImageUrl(): String {

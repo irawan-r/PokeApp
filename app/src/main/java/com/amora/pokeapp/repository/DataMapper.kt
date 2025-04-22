@@ -1,5 +1,6 @@
 package com.amora.pokeapp.repository
 
+import com.amora.pokeapp.persistence.entity.AbilityEntity
 import com.amora.pokeapp.persistence.entity.PokemonCompleteDetails
 import com.amora.pokeapp.persistence.entity.PokemonDetailsEntity
 import com.amora.pokeapp.persistence.entity.PokemonEntity
@@ -9,6 +10,7 @@ import com.amora.pokeapp.persistence.entity.StatsItemEntity
 import com.amora.pokeapp.persistence.entity.TypeEntity
 import com.amora.pokeapp.persistence.entity.TypesEntity
 import com.amora.pokeapp.persistence.entity.UserEntity
+import com.amora.pokeapp.repository.model.AbilityItem
 import com.amora.pokeapp.repository.model.PokemonDetails
 import com.amora.pokeapp.repository.model.PokemonPoster
 import com.amora.pokeapp.repository.model.Sprites
@@ -65,7 +67,8 @@ object DataMapper {
                 height = height
             ),
             stats = stats.toListStatsEntity(this),
-            types = types.toListTypeEntity(id)
+            types = types.toListTypeEntity(id),
+            abilities = abilities.toAbilitiesEntities(id)
         )
     }
 
@@ -97,6 +100,17 @@ object DataMapper {
             slot = slot,
             type = TypeEntity(name = type?.name, url = type?.url)
         )
+    }
+
+    private fun AbilityItem.toAbilityEntities(id: Int?): AbilityEntity {
+        return AbilityEntity(
+            fkId = id,
+            name = ability?.name
+        )
+    }
+
+    fun List<AbilityItem>?.toAbilitiesEntities(id: Int?): List<AbilityEntity> {
+        return this?.map { it.toAbilityEntities(id) }.orEmpty()
     }
 
     fun UserAccount?.toUserEntity() =

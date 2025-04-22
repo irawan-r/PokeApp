@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.amora.pokeapp.persistence.entity.AbilityEntity
 import com.amora.pokeapp.persistence.entity.PokemonCompleteDetails
 import com.amora.pokeapp.persistence.entity.PokemonDetailsEntity
 import com.amora.pokeapp.persistence.entity.PokemonEntity
@@ -27,11 +28,15 @@ interface PokemonDao {
 	@Insert(onConflict = OnConflictStrategy.REPLACE)
 	suspend fun insertTypesItem(typesItem: List<TypesEntity>)
 
+	@Insert(onConflict = OnConflictStrategy.REPLACE)
+	suspend fun insertAbilityItem(abilityItem: List<AbilityEntity>)
+
 	@Transaction
 	suspend fun insertCompletePokemonDetails(pokemonCompleteDetails: PokemonCompleteDetails) {
 		insertPokemonDetails(pokemonCompleteDetails.pokemonDetails)
 		insertStatsItem(pokemonCompleteDetails.stats)
 		insertTypesItem(pokemonCompleteDetails.types)
+		insertAbilityItem(pokemonCompleteDetails.abilities)
 	}
 
 	@Query("SELECT * FROM details WHERE id = :pokeId AND name = :pokeName")
