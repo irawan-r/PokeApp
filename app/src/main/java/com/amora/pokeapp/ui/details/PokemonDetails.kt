@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.SnackbarDefaults.backgroundColor
 import androidx.compose.material.icons.Icons
@@ -35,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -54,11 +56,15 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.amora.pokeapp.persistence.entity.PokemonCompleteDetails
 import com.amora.pokeapp.persistence.entity.PokemonCompleteDetails.Companion.getImageUrl
+import com.amora.pokeapp.persistence.entity.PokemonDetailsEntity
+import com.amora.pokeapp.persistence.entity.SpritesEntity
+import com.amora.pokeapp.persistence.entity.StatsEntity
+import com.amora.pokeapp.persistence.entity.StatsItemEntity
+import com.amora.pokeapp.persistence.entity.TypesEntity
 import com.amora.pokeapp.repository.model.PokeMark
 import com.amora.pokeapp.ui.utils.convertHeight
 import com.amora.pokeapp.ui.utils.convertWeight
@@ -72,7 +78,7 @@ fun PokemonDetails(
     viewModel: DetailsViewModel,
     pressOnBack: () -> Unit = {}
 ) {
-    var index by remember { mutableStateOf(poke.id) }
+    var index by remember { mutableIntStateOf(poke.id) }
     val swipeAnim = remember { Animatable(0f) }
 
     LaunchedEffect(poke, index) {
@@ -194,10 +200,12 @@ private fun PokemonDetailsBody(
                             onSwipeIndexChanged(index.inc())
                             offsetX.snapTo(0f)
                         }
+
                         offsetX.value > threshold && index > 1 -> {
                             onSwipeIndexChanged(index.dec())
                             offsetX.snapTo(0f)
                         }
+
                         else -> {
                             offsetX.animateTo(0f, animationSpec = tween(300))
                         }
@@ -241,44 +249,15 @@ private fun PokemonDetailsContent(
             .background(backgroundColor)
     ) {
         val (background, arrow, title, species, physics, content) = createRefs()
-        Box(
-            modifier = Modifier
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            randomColorBackground,
-                            randomColorBackground,
-                            MaterialTheme.colorScheme.background
-                        )
-                    ),
-                    shape = RoundedCornerShape(
-                        topStart = 0.dp,
-                        topEnd = 0.dp,
-                        bottomEnd = 50.dp,
-                        bottomStart = 50.dp
-                    )
-                )
-                .constrainAs(background) {
-                    top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                }
-
-        ) {
-            val painter = rememberAsyncImagePainter(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(poster.getImageUrl())
-                    .crossfade(true)
-                    .build()
-            )
-
-            Image(
-                painter = painter,
-                contentDescription = null,
-                contentScale = ContentScale.Inside,
-                modifier = Modifier.aspectRatio(1.2f)
-            )
-        }
+        PokemonImageHeader(
+            imageUrl = poster.getImageUrl(),
+            backgroundColor = randomColorBackground,
+            modifier = Modifier.constrainAs(background) {
+                top.linkTo(parent.top)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            }
+        )
 
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -313,117 +292,209 @@ private fun PokemonDetailsContent(
             color = Color.White
         )
 
-        Row(
-            modifier = Modifier
-                .constrainAs(species) {
-                    top.linkTo(title.bottom)
-                    linkTo(
-                        start = parent.start,
-                        end = parent.end,
-                        startMargin = 16.dp,
-                        endMargin = 16.dp
-                    )
-                }
-                .padding(16.dp)
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            poster.types.forEach {
-                Text(
-                    text = it.type?.name.toString(),
-                    color = MaterialTheme.colorScheme.background,
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .background(
-                            randomColorSubTitle, shape = RoundedCornerShape(
-                                topStart = 10.dp,
-                                topEnd = 10.dp,
-                                bottomEnd = 10.dp,
-                                bottomStart = 10.dp
-                            )
-                        )
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
+        PokemonTypeChips(
+            types = poster.types.map { it.type?.name.orEmpty() },
+            chipColor = randomColorSubTitle,
+            modifier = Modifier.constrainAs(species) {
+                top.linkTo(title.bottom)
+                linkTo(
+                    start = parent.start,
+                    end = parent.end,
+                    startMargin = 16.dp,
+                    endMargin = 16.dp
                 )
             }
+        )
+
+        PokemonPhysicalAttributes(
+            weight = poster.pokemonDetails.weight.convertWeight(),
+            height = poster.pokemonDetails.height.convertHeight(),
+            modifier = Modifier.constrainAs(physics) {
+                top.linkTo(species.bottom)
+                linkTo(start = parent.start, end = parent.end)
+            }
+        )
+
+        PokemonStatsSection(
+            stats = poster.stats,
+            modifier = Modifier.constrainAs(content) {
+                top.linkTo(physics.bottom)
+                linkTo(start = parent.start, end = parent.end)
+            }
+        )
+    }
+}
+
+@Composable
+private fun PokemonTypeChips(
+    types: List<String>,
+    chipColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .padding(16.dp)
+            .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        types.forEach { typeName ->
+            Text(
+                text = typeName,
+                color = MaterialTheme.colorScheme.background,
+                modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .background(
+                        chipColor,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            )
         }
+    }
+}
 
-        Row(
-            modifier = Modifier
-                .constrainAs(physics) {
-                    top.linkTo(species.bottom)
-                    linkTo(
-                        start = parent.start,
-                        end = parent.end
-                    )
-                }
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+@Composable
+private fun PokemonPhysicalAttributes(
+    weight: String,
+    height: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            Column(
-                modifier = Modifier.padding(horizontal = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = poster.pokemonDetails.weight.convertWeight(),
-                    color = MaterialTheme.colorScheme.background,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-                Text(
-                    text = "Weight",
-                    color = MaterialTheme.colorScheme.background,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
-
-            Column(
-                modifier = Modifier.padding(horizontal = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = poster.pokemonDetails.height.convertHeight(),
-                    color = MaterialTheme.colorScheme.background,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-                Text(
-                    text = "Height",
-                    color = MaterialTheme.colorScheme.background,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
+            Text(
+                text = weight,
+                color = MaterialTheme.colorScheme.background,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+            Text(
+                text = "Weight",
+                color = MaterialTheme.colorScheme.background,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
         }
 
         Column(
-            modifier = Modifier
-                .constrainAs(content) {
-                    top.linkTo(physics.bottom)
-                    linkTo(
-                        start = parent.start,
-                        end = parent.end
-                    )
-                }
-                .padding(horizontal = 32.dp)
-                .padding(bottom = 16.dp)
+            modifier = Modifier.padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Text(
-                text = "Base Stats",
-                fontSize = 20.sp,
+                text = height,
+                color = MaterialTheme.colorScheme.background,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.background, modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(bottom = 20.dp)
+                fontSize = 20.sp
             )
-
-            poster.stats.forEach { item ->
-
-                StatAnimatedProgressBar(
-                    statName = item.stats?.name.orEmpty(),
-                    statValue = item.baseStat ?: 0
-                )
-            }
+            Text(
+                text = "Height",
+                color = MaterialTheme.colorScheme.background,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
         }
     }
+}
+
+@Composable
+private fun PokemonStatsSection(
+    stats: List<StatsItemEntity>,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .padding(horizontal = 32.dp)
+            .padding(bottom = 16.dp)
+    ) {
+        Text(
+            text = "Base Stats",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(bottom = 20.dp)
+        )
+
+        stats.forEach { item ->
+            StatAnimatedProgressBar(
+                statName = item.stats?.name.orEmpty(),
+                statValue = item.baseStat ?: 0
+            )
+        }
+    }
+}
+
+@Composable
+private fun PokemonImageHeader(
+    imageUrl: String,
+    backgroundColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        backgroundColor,
+                        backgroundColor,
+                        MaterialTheme.colorScheme.background
+                    )
+                ),
+                shape = RoundedCornerShape(
+                    topStart = 0.dp,
+                    topEnd = 0.dp,
+                    bottomEnd = 50.dp,
+                    bottomStart = 50.dp
+                )
+            )
+    ) {
+        val painter = rememberAsyncImagePainter(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imageUrl)
+                .crossfade(true)
+                .build()
+        )
+
+        Image(
+            painter = painter,
+            contentDescription = null,
+            contentScale = ContentScale.Inside,
+            modifier = Modifier.aspectRatio(1.2f)
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PreviewPokemonDetailsContent() {
+    val dummyStats = listOf(
+        StatsItemEntity(baseStat = 45, stats = StatsEntity(name = "HP")),
+        StatsItemEntity(baseStat = 49, stats = StatsEntity(name = "Attack")),
+        StatsItemEntity(baseStat = 49, stats = StatsEntity(name = "Defense"))
+    )
+
+    val dummyPoster = PokemonCompleteDetails(
+        pokemonDetails = PokemonDetailsEntity(
+            name = "Bulbasaur",
+            weight = 69,
+            height = 7,
+            sprites = SpritesEntity()
+        ),
+        stats = dummyStats,
+        types = listOf(
+            TypesEntity()
+        )
+    )
+
+    PokemonDetailsContent(
+        poster = dummyPoster,
+        randomColorBackground = Color(0xFF81C784),
+        randomColorSubTitle = Color(0xFF4CAF50),
+        pressOnBack = {}
+    )
 }
