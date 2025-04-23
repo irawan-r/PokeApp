@@ -569,21 +569,12 @@ private fun PokemonImageHeader(
                 )
             )
     ) {
-        val painter = rememberAsyncImagePainter(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrl)
-                .crossfade(true)
-                .build()
-        )
 
         NetworkImage(
             url = imageUrl,
             modifier = Modifier
                 .aspectRatio(1.2f)
                 .animateContentSize()
-                .graphicsLayer {
-                    alpha = if (painter.state is AsyncImagePainter.State.Success) 1f else 0f
-                }
         )
     }
 }

@@ -8,13 +8,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-
+import coil.size.Scale
 
 @Composable
-fun rememberPosterPainter(url: String?): Painter {
+private fun rememberPosterPainter(url: String?): Painter {
     return rememberAsyncImagePainter(
         model = ImageRequest.Builder(LocalContext.current)
             .data(url)
+            .scale(Scale.FIT)
             .diskCachePolicy(coil.request.CachePolicy.ENABLED)
             .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
             .networkCachePolicy(coil.request.CachePolicy.ENABLED)
