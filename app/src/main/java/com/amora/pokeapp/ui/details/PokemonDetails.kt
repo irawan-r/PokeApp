@@ -5,6 +5,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -95,11 +96,12 @@ fun PokemonDetails(
     var index by remember { mutableIntStateOf(poke.id) }
     val swipeAnim = remember { Animatable(0f) }
 
+    val details by viewModel.posterDetailsFlow.collectAsStateWithLifecycle(initialValue = null)
+
     LaunchedEffect(poke, index) {
         viewModel.loadPosterByName(poke.copy(id = index))
     }
 
-    val details by viewModel.posterDetailsFlow.collectAsStateWithLifecycle(initialValue = null)
 
     details?.onSuccess { data ->
         data?.let {
@@ -215,7 +217,9 @@ fun PokemonDetailsBody(
     val scope = rememberCoroutineScope()
     val offsetX = remember { Animatable(initialOffset) }
 
-    val swipeThreshold = 500
+    val swipeThreshold = 80f
+
+    val animationTreshold = 100f
 
     val gestureModifier = if (enableSwipe) {
         Modifier.pointerInput(index) {
@@ -223,31 +227,49 @@ fun PokemonDetailsBody(
                 onHorizontalDrag = { _, dragAmount ->
                     scope.launch {
                         offsetX.snapTo(offsetX.value + dragAmount)
+                        when {
+                            offsetX.value < -animationTreshold -> {
+                                offsetX.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = spring(
+                                        dampingRatio = 0.5f,
+                                        stiffness = 100f
+                                    )
+                                )
+
+                            }
+
+                            offsetX.value > animationTreshold -> {
+                                if (index.inc() > 1) {
+                                    offsetX.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(
+                                            dampingRatio = 0.5f,
+                                            stiffness = 100f
+                                        )
+                                    )
+                                }
+                            }
+
+                            else -> Unit
+                        }
                     }
                 },
                 onDragEnd = {
                     scope.launch {
-                        // Handle left swipe and right swipe
                         when {
                             offsetX.value < -swipeThreshold -> {
-                                onSwipeIndexChanged(index.inc()) // Swipe left to right (next)
+                                onSwipeIndexChanged(index.inc())
                             }
 
                             offsetX.value > swipeThreshold -> {
                                 if (index > 1) {
-                                    onSwipeIndexChanged(index.dec()) // Swipe right to left (previous)
+                                    onSwipeIndexChanged(index.dec())
                                 }
                             }
 
-                            else -> {
-                                offsetX.animateTo(0f, animationSpec = tween(300))
-                            }
+                            else -> Unit
                         }
-                    }
-                },
-                onDragCancel = {
-                    scope.launch {
-                        offsetX.animateTo(0f, animationSpec = tween(300))
                     }
                 }
             )
@@ -261,7 +283,6 @@ fun PokemonDetailsBody(
             .fillMaxSize()
             .offset { IntOffset(offsetX.value.roundToInt(), 0) }
     ) {
-
         PokemonDetailsContent(
             modifier = Modifier
                 .fillMaxSize(),
@@ -288,66 +309,41 @@ private fun PokemonDetailsContent(
         delay(500)
         fadeInVisible = true
     }
-
-    AnimatedVisibility(
-        visible = fadeInVisible,
-        enter = fadeIn(animationSpec = tween(durationMillis = 300)),
-        exit = fadeOut(animationSpec = tween(durationMillis = 100))
+    ConstraintLayout(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .background(backgroundColor)
     ) {
-        ConstraintLayout(
-            modifier = modifier
-                .verticalScroll(rememberScrollState())
-                .background(backgroundColor)
-        ) {
-            val (background, arrow, title, species, physics, abilities, stats) = createRefs()
-            PokemonImageHeader(
-                imageUrl = poster.getImageUrl(),
-                backgroundColor = randomColorBackground,
-                modifier = Modifier.constrainAs(background) {
+        val (background, arrow, title, species, physics, abilities, stats) = createRefs()
+        PokemonImageHeader(
+            imageUrl = poster.getImageUrl(),
+            backgroundColor = randomColorBackground,
+            modifier = Modifier.constrainAs(background) {
+                top.linkTo(parent.top)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            }
+        )
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+            tint = MaterialTheme.colorScheme.onSecondary,
+            contentDescription = null,
+            modifier = Modifier
+                .constrainAs(arrow) {
                     top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
                 }
-            )
+                .padding(12.dp)
+                .statusBarsPadding()
+                .clickable { pressOnBack() }
+        )
 
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                tint = MaterialTheme.colorScheme.onSecondary,
-                contentDescription = null,
-                modifier = Modifier
-                    .constrainAs(arrow) {
-                        top.linkTo(parent.top)
-                    }
-                    .padding(12.dp)
-                    .statusBarsPadding()
-                    .clickable { pressOnBack() }
-            )
-
-            Text(
-                text = poster.pokemonDetails.name.toString(),
-                modifier = Modifier
-                    .padding(top = 16.dp)
-                    .constrainAs(title) {
-                        top.linkTo(background.bottom)
-                        linkTo(
-                            start = parent.start,
-                            end = parent.end,
-                            startMargin = 16.dp,
-                            endMargin = 16.dp
-                        )
-                    }
-                    .padding(8.dp),
-                textAlign = TextAlign.Center,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-
-            PokemonTypeChips(
-                types = poster.types.map { it.type?.name.orEmpty() },
-                chipColor = randomColorSubTitle,
-                modifier = Modifier.constrainAs(species) {
-                    top.linkTo(title.bottom)
+        Text(
+            text = poster.pokemonDetails.name.toString(),
+            modifier = Modifier
+                .padding(top = 16.dp)
+                .constrainAs(title) {
+                    top.linkTo(background.bottom)
                     linkTo(
                         start = parent.start,
                         end = parent.end,
@@ -355,33 +351,51 @@ private fun PokemonDetailsContent(
                         endMargin = 16.dp
                     )
                 }
-            )
+                .padding(8.dp),
+            textAlign = TextAlign.Center,
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
 
-            PokemonPhysicalAttributes(
-                weight = poster.pokemonDetails.weight.convertWeight(),
-                height = poster.pokemonDetails.height.convertHeight(),
-                modifier = Modifier.constrainAs(physics) {
-                    top.linkTo(species.bottom)
-                    linkTo(start = parent.start, end = parent.end)
-                }
-            )
+        PokemonTypeChips(
+            types = poster.types.map { it.type?.name.orEmpty() },
+            chipColor = randomColorSubTitle,
+            modifier = Modifier.constrainAs(species) {
+                top.linkTo(title.bottom)
+                linkTo(
+                    start = parent.start,
+                    end = parent.end,
+                    startMargin = 16.dp,
+                    endMargin = 16.dp
+                )
+            }
+        )
 
-            PokemonAbilities(
-                data = poster.abilities,
-                modifier = Modifier.constrainAs(abilities) {
-                    top.linkTo(physics.bottom)
-                    linkTo(start = parent.start, end = parent.end)
-                }
-            )
+        PokemonPhysicalAttributes(
+            weight = poster.pokemonDetails.weight.convertWeight(),
+            height = poster.pokemonDetails.height.convertHeight(),
+            modifier = Modifier.constrainAs(physics) {
+                top.linkTo(species.bottom)
+                linkTo(start = parent.start, end = parent.end)
+            }
+        )
 
-            PokemonStatsSection(
-                stats = poster.stats,
-                modifier = Modifier.constrainAs(stats) {
-                    top.linkTo(abilities.bottom)
-                    linkTo(start = parent.start, end = parent.end)
-                }
-            )
-        }
+        PokemonAbilities(
+            data = poster.abilities,
+            modifier = Modifier.constrainAs(abilities) {
+                top.linkTo(physics.bottom)
+                linkTo(start = parent.start, end = parent.end)
+            }
+        )
+
+        PokemonStatsSection(
+            stats = poster.stats,
+            modifier = Modifier.constrainAs(stats) {
+                top.linkTo(abilities.bottom)
+                linkTo(start = parent.start, end = parent.end)
+            }
+        )
     }
 }
 
