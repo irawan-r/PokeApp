@@ -6,6 +6,8 @@ sealed class NavScreen(val route: String) {
 	object AuthRoot : NavScreen("auth_root")
 	object MainRoot : NavScreen("main_root")
 
+	object Splash: NavScreen("splash")
+
 	// Auth
 	object Login : NavScreen("auth/login")
 	object Registration : NavScreen("auth/registration")

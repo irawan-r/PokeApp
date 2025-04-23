@@ -2,7 +2,7 @@ package com.amora.pokeapp.ui.main
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
@@ -31,7 +32,7 @@ import com.amora.pokeapp.ui.login.PokeSnackbar
 import com.amora.pokeapp.ui.posters.Posters
 import com.amora.pokeapp.ui.registration.RegisterScreen
 import com.amora.pokeapp.ui.search.SearchScreen
-import com.amora.pokeapp.ui.utils.InternetStatus
+import com.amora.pokeapp.ui.splash.SplashScreen
 import com.amora.pokeapp.ui.utils.orFalse
 import com.amora.pokeapp.ui.utils.showInternetStatus
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
@@ -60,37 +61,47 @@ fun PokemonMainScreen() {
     val authViewModel: AuthViewModel = hiltViewModel()
 
     val mainViewModel: MainViewModel = hiltViewModel()
-    val isLoggedIn by authViewModel.isLoggedIn.collectAsState(initial = false)
-
-    val startDestination = if (isLoggedIn.orFalse()) {
-        NavScreen.MainRoot.route
-    } else {
-        NavScreen.AuthRoot.route
-    }
 
     val snackbarHostState = remember { SnackbarHostState() }
 
     val onlineState by mainViewModel.isOnline.collectAsState()
 
+    var showSplash by remember { mutableStateOf(true) }
+
+    val isLoggedIn by authViewModel.isLoggedIn.collectAsStateWithLifecycle(initialValue = false)
+
     LaunchedEffect(onlineState) {
-        snackbarHostState.showInternetStatus(onlineState)
-
-    }
-
-    LaunchedEffect(Unit) {
         authViewModel.checkUserLoggedIn()
+        snackbarHostState.showInternetStatus(onlineState)
     }
 
     Scaffold(
         snackbarHost = {
-            PokeSnackbar(snackbarHostState)
+            if (!showSplash) {
+                PokeSnackbar(snackbarHostState)
+            }
         }
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = startDestination,
+            startDestination = NavScreen.Splash.route,
             modifier = Modifier.padding(paddingValues),
         ) {
+            composable(NavScreen.Splash.route) {
+                SplashScreen(
+                    onSplashFinished = { finished ->
+                        showSplash = finished
+                        val destination = if (isLoggedIn.orFalse()) {
+                            NavScreen.MainRoot.route
+                        } else {
+                            NavScreen.AuthRoot.route
+                        }
+                        navController.navigate(destination) {
+                            popUpTo(NavScreen.Splash.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
             authGraph(navController, snackbarHostState)
             mainGraph(
                 navController = navController,
