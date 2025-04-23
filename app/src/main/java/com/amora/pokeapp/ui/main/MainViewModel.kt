@@ -50,4 +50,10 @@ class MainViewModel @Inject constructor(
 		_selectedTab.value = tab
 	}
 
+	fun logOutUser() {
+		viewModelScope.launch {
+			mainRepository.logOutCurrentUser()
+		}
+	}
+
 }

@@ -28,4 +28,8 @@ interface AuthDao {
 
     @Query("SELECT * FROM user WHERE isLoggedIn = 1 LIMIT 1")
     suspend fun getLoggedInUser(): UserEntity?
+
+    @Query("UPDATE user SET isLoggedIn = 0 WHERE isLoggedIn = 1")
+    suspend fun logoutCurrentUser()
+
 }

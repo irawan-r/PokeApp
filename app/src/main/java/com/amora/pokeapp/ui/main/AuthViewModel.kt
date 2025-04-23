@@ -2,6 +2,7 @@ package com.amora.pokeapp.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.amora.pokeapp.repository.AuthRepository
 import com.amora.pokeapp.repository.model.UserAccount
 import com.amora.pokeapp.ui.utils.UiState

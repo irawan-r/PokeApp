@@ -15,4 +15,6 @@ interface MainRepository {
 	fun getPokemonDetails(poke: PokeMark, isSearch: Boolean = false): Flow<PokemonCompleteDetails?>
 
 	suspend fun getCurrentUser(): UserEntity?
+
+	suspend fun logOutCurrentUser()
 }

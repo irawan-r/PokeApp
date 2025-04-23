@@ -106,4 +106,8 @@ class MainRepositoryImpl @Inject constructor(
         return database.authDao().getLoggedInUser()
     }
 
+    override suspend fun logOutCurrentUser() {
+        return database.authDao().logoutCurrentUser()
+    }
+
 }

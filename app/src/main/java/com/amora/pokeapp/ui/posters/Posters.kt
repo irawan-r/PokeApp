@@ -12,8 +12,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
+import androidx.compose.material.IconButton
+import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -47,7 +51,8 @@ import com.amora.pokeapp.ui.main.MainViewModel
 fun Posters(
     viewModel: MainViewModel,
     selectedPoster: (PokeMark?) -> Unit,
-    selectSearch: () -> Unit
+    selectSearch: () -> Unit,
+    logOutAction: () -> Unit
 ) {
     val selectedTab = HomeTab.getTabFromSource(viewModel.selectedTab.value)
     val tabs = HomeTab.values().toList()
@@ -73,7 +78,8 @@ fun Posters(
         viewModel = viewModel,
         selectedTab = selectedTab,
         selectSearchButton = selectSearch,
-        selectedPoster = selectedPoster
+        selectedPoster = selectedPoster,
+        logOutAction = logOutAction
     )
 }
 
@@ -85,6 +91,7 @@ fun MainScreen(
     tabs: List<HomeTab>,
     selectedTab: HomeTab,
     viewModel: MainViewModel,
+    logOutAction: () -> Unit,
     selectSearchButton: () -> Unit,
     selectedPoster: (PokeMark?) -> Unit
 ) {
@@ -99,7 +106,8 @@ fun MainScreen(
                     top.linkTo(parent.top)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
-                }
+                },
+            onLogoutClick = logOutAction
         )
 
         AnimatedVisibility(
@@ -173,7 +181,8 @@ fun MainScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PokemonAppBar(modifier: Modifier) {
+private fun PokemonAppBar(modifier: Modifier, onLogoutClick: () -> Unit) {
+    val showDialog = rememberSaveable { mutableStateOf(false) }
     TopAppBar(
         modifier = modifier,
         title = {
@@ -186,6 +195,35 @@ private fun PokemonAppBar(modifier: Modifier) {
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surfaceTint
-        )
+        ),
+        actions = {
+            IconButton(onClick = { showDialog.value = true }) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                    contentDescription = "Logout",
+                    tint = MaterialTheme.colorScheme.background
+                )
+            }
+        }
     )
+    if (showDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDialog.value = false },
+            title = { Text("Logout") },
+            text = { Text("Are you sure you want to log out?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDialog.value = false
+                    onLogoutClick()
+                }) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog.value = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }

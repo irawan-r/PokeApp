@@ -104,6 +104,7 @@ fun PokemonMainScreen() {
             }
             authGraph(navController, snackbarHostState)
             mainGraph(
+                mainViewModel = mainViewModel,
                 navController = navController,
                 homeContent = {
                     LaunchedEffect(Unit) {
@@ -128,6 +129,7 @@ fun PokemonMainScreen() {
 }
 
 fun NavGraphBuilder.mainGraph(
+    mainViewModel: MainViewModel,
     navController: NavController,
     homeContent: @Composable (() -> Unit),
     detailContent: @Composable (() -> Unit)
@@ -145,6 +147,12 @@ fun NavGraphBuilder.mainGraph(
                 },
                 selectSearch = {
                     navController.navigate(NavScreen.SearchPokemon.route)
+                },
+                logOutAction = {
+                    mainViewModel.logOutUser()
+                    navController.navigate(NavScreen.AuthRoot.route) {
+                        popUpTo(NavScreen.MainRoot.route) { inclusive = true }
+                    }
                 }
             )
             homeContent.invoke()
