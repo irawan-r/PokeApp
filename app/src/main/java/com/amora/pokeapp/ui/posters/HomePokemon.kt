@@ -21,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ import com.amora.pokeapp.persistence.entity.PokemonEntity
 import com.amora.pokeapp.repository.model.PokeMark
 import com.amora.pokeapp.repository.model.PokemonPoster
 import com.amora.pokeapp.ui.main.MainViewModel
+import com.amora.pokeapp.ui.utils.NetworkImage
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -59,12 +61,15 @@ fun HomePokemon(
             poster.itemCount > 0 -> {
                 ListPokemon(modifier, poster, selectedPoster)
             }
+
             poster.loadState.refresh is LoadState.Error -> {
                 ErrorViewPokemon(poster)
             }
+
             poster.loadState.refresh is LoadState.NotLoading -> {
                 ListPokemon(modifier, poster, selectedPoster)
             }
+
             else -> Unit
         }
         PullRefreshIndicator(
@@ -100,20 +105,9 @@ fun PokemonPoster(
     ) {
         ConstraintLayout {
             val (image, title) = createRefs()
-            val painter = rememberAsyncImagePainter(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(poster?.getImageUrl())
-                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                    .networkCachePolicy(coil.request.CachePolicy.ENABLED)
-                    .crossfade(true)
-                    .build()
-            )
 
-            Image(
-                painter = painter,
-                contentDescription = null,
-                contentScale = ContentScale.Inside,
+            NetworkImage(
+                url = poster?.getImageUrl(),
                 modifier = Modifier
                     .aspectRatio(0.9f)
                     .constrainAs(image) {

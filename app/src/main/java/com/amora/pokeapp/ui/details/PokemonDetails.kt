@@ -77,6 +77,7 @@ import com.amora.pokeapp.persistence.entity.StatsEntity
 import com.amora.pokeapp.persistence.entity.StatsItemEntity
 import com.amora.pokeapp.persistence.entity.TypesEntity
 import com.amora.pokeapp.repository.model.PokeMark
+import com.amora.pokeapp.ui.utils.NetworkImage
 import com.amora.pokeapp.ui.utils.convertHeight
 import com.amora.pokeapp.ui.utils.convertWeight
 import com.amora.pokeapp.ui.utils.onError
@@ -575,10 +576,8 @@ private fun PokemonImageHeader(
                 .build()
         )
 
-        Image(
-            painter = painter,
-            contentDescription = null,
-            contentScale = ContentScale.Inside,
+        NetworkImage(
+            url = imageUrl,
             modifier = Modifier
                 .aspectRatio(1.2f)
                 .animateContentSize()
