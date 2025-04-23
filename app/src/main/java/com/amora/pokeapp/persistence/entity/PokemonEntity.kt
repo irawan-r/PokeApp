@@ -20,7 +20,7 @@ class PokemonEntity(
 	@ColumnInfo("url")
 	val url: String? = null
 ) {
-	private fun getPokemonId(): Int? {
+	fun getPokemonId(): Int? {
 		val id = url?.split("/".toRegex())?.dropLast(1)?.last()?.toIntOrNull()
 		return id
 	}

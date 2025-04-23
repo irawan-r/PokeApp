@@ -47,6 +47,10 @@ android {
 				getDefaultProguardFile("proguard-android-optimize.txt"),
 				"proguard-rules.pro"
 			)
+			buildConfigField("Boolean", "DEBUG", "false")
+		}
+		debug {
+			buildConfigField("Boolean", "DEBUG", "true")
 		}
 	}
 	compileOptions {

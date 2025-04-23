@@ -1,6 +1,6 @@
 package com.amora.pokeapp.di
 
-import androidx.viewbinding.BuildConfig
+import com.amora.pokeapp.BuildConfig
 import com.amora.pokeapp.BuildConfig.BASE_URL
 import com.amora.pokeapp.network.ApiService
 import com.skydoves.sandwich.adapters.ApiResponseCallAdapterFactory

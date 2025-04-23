@@ -36,7 +36,7 @@ class DetailsViewModel @Inject constructor(
 		flow {
 			emit(UiState.Loading)
 			delay(500)
-			val result = repository.getPokemonDetails(pokeMark).firstOrNull()
+			val result = repository.getPokemonDetails(pokeMark, true).firstOrNull()
 			if (result != null) {
 				emit(UiState.Success(data = result))
 			} else {

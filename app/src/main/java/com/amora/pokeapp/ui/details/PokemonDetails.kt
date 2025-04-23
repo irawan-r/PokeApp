@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
@@ -98,7 +99,7 @@ fun PokemonDetails(
         viewModel.loadPosterByName(poke.copy(id = index))
     }
 
-    val details by viewModel.posterDetailsFlow.collectAsState(initial = null)
+    val details by viewModel.posterDetailsFlow.collectAsStateWithLifecycle(initialValue = null)
 
     details?.onSuccess { data ->
         data?.let {

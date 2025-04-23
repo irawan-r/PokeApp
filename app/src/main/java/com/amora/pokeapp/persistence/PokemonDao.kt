@@ -39,11 +39,14 @@ interface PokemonDao {
 		insertAbilityItem(pokemonCompleteDetails.abilities)
 	}
 
-	@Query("SELECT * FROM details WHERE id = :pokeId AND name = :pokeName")
+	@Query("SELECT * FROM details WHERE remote_id = :pokeId OR name = :pokeName")
 	suspend fun getPokemonDetailsComplete(pokeId: Int, pokeName: String): PokemonCompleteDetails?
 
 	@Query("SELECT * FROM pokemon WHERE pokeId = :pokeId")
-	suspend fun getPokemonById(pokeId: Int): PokemonEntity?
+	suspend fun getPokemon(pokeId: Int): PokemonEntity?
+
+	@Query("SELECT * FROM pokemon WHERE pokeId = :pokeId OR name = :pokeName")
+	suspend fun searchPokemon(pokeId: Int, pokeName: String): PokemonEntity?
 
 	@Query("SELECT * FROM pokemon")
 	fun getAllPokemon(): PagingSource<Int, PokemonEntity>

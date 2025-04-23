@@ -12,7 +12,7 @@ interface MainRepository {
 
 	fun getPokemons(page: Int = 0): Flow<PagingData<PokemonEntity>>
 
-	fun getPokemonDetails(poke: PokeMark): Flow<PokemonCompleteDetails?>
+	fun getPokemonDetails(poke: PokeMark, isSearch: Boolean = false): Flow<PokemonCompleteDetails?>
 
 	suspend fun getCurrentUser(): UserEntity?
 }

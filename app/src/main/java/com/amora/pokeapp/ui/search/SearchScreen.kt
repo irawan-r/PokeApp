@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.amora.pokeapp.repository.model.PokeMark
 import com.amora.pokeapp.ui.details.DetailsViewModel
 import com.amora.pokeapp.ui.details.PokemonDetailsBody
@@ -39,7 +40,7 @@ fun SearchScreen(
     viewModel: DetailsViewModel,
     pressOnBack: () -> Unit
 ) {
-    val details by viewModel.posterSearchFlow.collectAsState(initial = null)
+    val details by viewModel.posterSearchFlow.collectAsStateWithLifecycle(initialValue = null)
 
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
     var hasSearched by remember { mutableStateOf(false) }

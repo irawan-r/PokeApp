@@ -67,35 +67,40 @@ class MainRepositoryImpl @Inject constructor(
         }.flowOn(Dispatchers.IO)
     }
 
-    override fun getPokemonDetails(
-        poke: PokeMark
-    ): Flow<PokemonCompleteDetails?> {
-        return flow {
-            val pokemonLocal = database.pokemonDao().getPokemonById(poke.id)
-            val pokeName = if (pokemonLocal != null) {
-                pokemonLocal.name
-            } else {
-                poke.name
-            }
-            val pokemonDetails = apiService.getPokemonDetails(pokeName.orEmpty())
-            val localPokemonDetails =
-                database.pokemonDao().getPokemonDetailsComplete(poke.id, poke.name)
-            if (localPokemonDetails != null && pokemonLocal?.pokeId != null && pokemonLocal.pokeId != 0) {
-                emit(localPokemonDetails)
-            } else {
-                pokemonDetails.suspendOnSuccess {
-                    val detailsData = PokemonCompleteDetails(
-                        pokemonDetails = data.toPokemonDetailsEntity(),
-                        stats = data.stats.toListStatsItemEntity(data),
-                        types = data.types.toListTypeEntity(data.id),
-                        abilities = data.abilities.toAbilitiesEntities(data.id)
-                    )
-                    database.pokemonDao().insertCompletePokemonDetails(detailsData)
-                    emit(data.toPokemonCompleteDetails())
-                }
-            }
-        }.flowOn(Dispatchers.IO)
-    }
+    private suspend fun searchPokemon(poke: PokeMark) = database.pokemonDao().searchPokemon(poke.id, poke.name)
+
+    private suspend fun getPokemon(poke: PokeMark) = database.pokemonDao().getPokemon(poke.id)
+
+    override fun getPokemonDetails(poke: PokeMark, isSearch: Boolean): Flow<PokemonCompleteDetails?> = flow {
+        val local = if (isSearch) {
+            searchPokemon(poke)
+        } else {
+            getPokemon(poke)
+        }
+
+        val name = local?.name ?: poke.name
+
+        val cached = database.pokemonDao().getPokemonDetailsComplete(
+            pokeId = local?.getPokemonId() ?: 0,
+            pokeName = name
+        )
+
+        if (cached != null && local?.getPokemonId() != 0) {
+            emit(cached)
+            return@flow
+        }
+
+        apiService.getPokemonDetails(name).suspendOnSuccess {
+            val details = PokemonCompleteDetails(
+                pokemonDetails = data.toPokemonDetailsEntity(),
+                stats = data.stats.toListStatsItemEntity(data),
+                types = data.types.toListTypeEntity(data.id),
+                abilities = data.abilities.toAbilitiesEntities(data.id)
+            )
+            database.pokemonDao().insertCompletePokemonDetails(details)
+            emit(data.toPokemonCompleteDetails())
+        }
+    }.flowOn(Dispatchers.IO)
 
     override suspend fun getCurrentUser(): UserEntity? {
         return database.authDao().getLoggedInUser()
