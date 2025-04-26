@@ -10,7 +10,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,7 +32,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
-@OptIn(FlowPreview::class)
 @Composable
 fun SearchScreen(
     modifier: Modifier = Modifier,
@@ -42,50 +40,8 @@ fun SearchScreen(
 ) {
     val details by viewModel.posterSearchFlow.collectAsStateWithLifecycle(initialValue = null)
 
-    var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
-    var hasSearched by remember { mutableStateOf(false) }
-
-    LaunchedEffect(searchQuery.text) {
-        snapshotFlow { searchQuery.text }
-            .debounce(1000)
-            .distinctUntilChanged()
-            .filter { it.isNotBlank() }
-            .collectLatest { query ->
-                hasSearched = true
-                viewModel.loadPosterByName(PokeMark(name = query))
-            }
-    }
-
     Column(modifier = modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search for a Pokémon...") },
-                singleLine = true
-            )
-        }
-
-        if (!hasSearched && searchQuery.text.isBlank()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Start typing to search for Pokémon.",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        }
-
+        SearchForm(viewModel)
         details?.onLoading {
             Box(
                 modifier = Modifier
@@ -118,6 +74,53 @@ fun SearchScreen(
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
+        }
+    }
+}
+
+@OptIn(FlowPreview::class)
+@Composable
+private fun SearchForm(viewModel: DetailsViewModel) {
+    var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
+    var hasSearched by remember { mutableStateOf(false) }
+
+    LaunchedEffect(searchQuery.text) {
+        snapshotFlow { searchQuery.text }
+            .debounce(1000)
+            .distinctUntilChanged()
+            .filter { it.isNotBlank() }
+            .collectLatest { query ->
+                hasSearched = true
+                viewModel.loadPosterByName(PokeMark(name = query))
+            }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Search for a Pokémon...") },
+            singleLine = true
+        )
+    }
+
+    if (!hasSearched && searchQuery.text.isBlank()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Start typing to search for Pokémon.",
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
     }
 }
