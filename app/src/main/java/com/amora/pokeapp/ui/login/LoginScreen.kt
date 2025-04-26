@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,8 +41,6 @@ fun LoginScreen(
     onLoginSuccess: (Boolean) -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
     val loginState: UiState<String> by viewModel.loginState.collectAsStateWithLifecycle(initialValue = UiState.Idle)
 
     LaunchedEffect(loginState) {
@@ -50,12 +49,8 @@ fun LoginScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         LoginForm(
-            name = name,
-            password = password,
-            onNameChange = { name = it },
-            onPasswordChange = { password = it },
             loginState = loginState,
-            onLoginClick = {
+            onLoginClick = { name, password ->
                 val userData = UserAccount(name, password)
                 viewModel.loginUser(userData)
             },
@@ -71,15 +66,13 @@ fun LoginScreen(
 
 @Composable
 fun LoginForm(
-    name: String,
-    password: String,
-    onNameChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
     loginState: UiState<String>,
-    onLoginClick: () -> Unit,
+    onLoginClick: (String, String) -> Unit,
     navigateToRegister: () -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
+    var tempName by remember { mutableStateOf("") }
+    var tempPassword by remember { mutableStateOf("") }
 
     LaunchedEffect(loginState) {
         loginState.showSnackbarIfNeeded(snackbarHostState)
@@ -93,55 +86,82 @@ fun LoginForm(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val nameFieldEmpty =
-            (loginState is UiState.Error || loginState is UiState.Empty) && name.isBlank()
+            (loginState is UiState.Error || loginState is UiState.Empty) && tempName.isBlank()
         val passwordFieldEmpty =
-            (loginState is UiState.Error || loginState is UiState.Empty) && password.isBlank()
+            (loginState is UiState.Error || loginState is UiState.Empty) && tempPassword.isBlank()
 
         Text("Welcome to Portal Pokemon", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
-        OutlinedTextField(
-            modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
-            value = name,
-            onValueChange = onNameChange,
-            label = { Text("Username") },
-            singleLine = true,
-            isError = nameFieldEmpty,
-            supportingText = {
-                if (nameFieldEmpty) {
-                    Text("Field is Empty", color = Color.LightGray)
-                }
-            },
-        )
+        UsernameField(onNameChange = { tempName = it }, isError = nameFieldEmpty)
 
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation(),
-            singleLine = true,
-            isError = passwordFieldEmpty,
-            supportingText = {
-                if (passwordFieldEmpty) {
-                    Text("Field is Empty", color = Color.LightGray)
-                }
-            },
-            modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth()
-        )
+        PasswordField(onPasswordChange = { tempPassword = it }, isError = passwordFieldEmpty)
 
-        Button(
-            onClick = onLoginClick,
+        LoginButton(
+            onClick = { onLoginClick(tempName, tempPassword) },
             enabled = loginState != UiState.Loading,
-            modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth()
-        ) {
-            Text(if (loginState == UiState.Loading) "Logging in..." else "Login")
-        }
+            isLoading = loginState == UiState.Loading
+        )
 
         TextButton(
             onClick = navigateToRegister,
-            modifier = Modifier.padding(vertical = 8.dp).align(Alignment.CenterHorizontally)
+            modifier = Modifier
+                .padding(vertical = 8.dp)
+                .align(Alignment.CenterHorizontally)
         ) {
             Text("Don't have an account? Register")
         }
+    }
+}
+
+@Composable
+private fun UsernameField(onNameChange: (String) -> Unit, isError: Boolean) {
+    var name by rememberSaveable { mutableStateOf("") }
+    OutlinedTextField(
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth(),
+        value = name,
+        onValueChange = {
+            name = it
+            onNameChange(it)
+        },
+        label = { Text("Username") },
+        singleLine = true,
+        isError = isError,
+        supportingText = { if (isError) Text("Field is Empty", color = Color.LightGray) }
+    )
+}
+
+@Composable
+private fun PasswordField(onPasswordChange: (String) -> Unit, isError: Boolean) {
+    var password by rememberSaveable { mutableStateOf("") }
+    OutlinedTextField(
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth(),
+        value = password,
+        onValueChange = {
+            password = it
+            onPasswordChange(it)
+        },
+        label = { Text("Password") },
+        visualTransformation = PasswordVisualTransformation(),
+        singleLine = true,
+        isError = isError,
+        supportingText = { if (isError) Text("Field is Empty", color = Color.LightGray) }
+    )
+}
+
+@Composable
+private fun LoginButton(onClick: () -> Unit, enabled: Boolean, isLoading: Boolean) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth()
+    ) {
+        Text(if (isLoading) "Logging in..." else "Login")
     }
 }
 
@@ -161,12 +181,8 @@ fun PokeSnackbar(snackbarHostState: SnackbarHostState) {
 @Composable
 fun LoginScreenPreview() {
     LoginForm(
-        name = "example@email.com",
-        password = "password123",
-        onNameChange = {},
-        onPasswordChange = {},
         loginState = UiState.Idle,
-        onLoginClick = {},
+        onLoginClick = { _, _ -> },
         navigateToRegister = {},
         snackbarHostState = SnackbarHostState()
     )
