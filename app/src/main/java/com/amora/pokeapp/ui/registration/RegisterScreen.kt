@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.amora.pokeapp.repository.model.UserAccount
+import com.amora.pokeapp.ui.login.PasswordField
+import com.amora.pokeapp.ui.login.UsernameField
 import com.amora.pokeapp.ui.main.AuthViewModel
 import com.amora.pokeapp.ui.utils.UiState
 import com.amora.pokeapp.ui.utils.showSnackbarIfNeeded
@@ -34,9 +36,9 @@ fun RegisterScreen(
     snackbarHostState: SnackbarHostState,
     onRegisterSuccess: (Boolean) -> Unit,
 ) {
-    val registerState: UiState<String> by viewModel.regisState.collectAsStateWithLifecycle(initialValue = UiState.Idle)
-    var name by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    val registerState: UiState<String> by viewModel.regisState.collectAsStateWithLifecycle(
+        initialValue = UiState.Idle
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         LaunchedEffect(registerState) {
@@ -44,13 +46,7 @@ fun RegisterScreen(
         }
 
         RegisterForm(
-            name = name,
-            password = password,
-            onNameChange = { name = it },
-            onPasswordChange = { password = it },
-            onSubmit = {
-                viewModel.registerUser(UserAccount(name, password))
-            },
+            viewModel = viewModel,
             regisState = registerState,
             snackbarHostState = snackbarHostState
         )
@@ -63,17 +59,17 @@ fun RegisterScreen(
 
 @Composable
 private fun RegisterForm(
-    name: String,
-    password: String,
-    onNameChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onSubmit: () -> Unit,
+    viewModel: AuthViewModel,
     regisState: UiState<String>,
     snackbarHostState: SnackbarHostState
 ) {
     LaunchedEffect(regisState) {
         regisState.showSnackbarIfNeeded(snackbarHostState)
     }
+
+    var tempName by rememberSaveable { mutableStateOf("") }
+
+    var tempPassword by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -82,25 +78,28 @@ private fun RegisterForm(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
+        val nameFieldEmpty =
+            (regisState is UiState.Error || regisState is UiState.Empty) && tempName.isBlank()
+        val passwordFieldEmpty =
+            (regisState is UiState.Error || regisState is UiState.Empty) && tempPassword.isBlank()
         Text("Register", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        OutlinedTextField(
-            value = name,
-            onValueChange = onNameChange,
-            label = { Text("Username") },
-            modifier = Modifier
-                .padding(vertical = 8.dp)
-                .fillMaxWidth()
+        UsernameField(
+            onNameChange = {
+                tempName = it
+            },
+            isError = nameFieldEmpty
         )
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text("Password") },
-            modifier = Modifier
-                .padding(vertical = 8.dp)
-                .fillMaxWidth()
+        PasswordField(
+            onPasswordChange = {
+                tempPassword = it
+            },
+            isError = passwordFieldEmpty
         )
         Button(
-            onClick = onSubmit,
+            onClick = {
+                viewModel.registerUser(UserAccount(tempName, tempPassword))
+            },
             modifier = Modifier.fillMaxWidth(),
             enabled = regisState != UiState.Loading
         ) {

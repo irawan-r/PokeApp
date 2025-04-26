@@ -114,7 +114,7 @@ fun LoginForm(
 }
 
 @Composable
-private fun UsernameField(onNameChange: (String) -> Unit, isError: Boolean) {
+fun UsernameField(onNameChange: (String) -> Unit, isError: Boolean) {
     var name by rememberSaveable { mutableStateOf("") }
     OutlinedTextField(
         modifier = Modifier
@@ -133,7 +133,7 @@ private fun UsernameField(onNameChange: (String) -> Unit, isError: Boolean) {
 }
 
 @Composable
-private fun PasswordField(onPasswordChange: (String) -> Unit, isError: Boolean) {
+fun PasswordField(onPasswordChange: (String) -> Unit, isError: Boolean) {
     var password by rememberSaveable { mutableStateOf("") }
     OutlinedTextField(
         modifier = Modifier
