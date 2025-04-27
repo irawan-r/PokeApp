@@ -154,4 +154,5 @@ dependencies {
 	// Palette
 	implementation(libs.palette.ktx)
 
+	implementation(libs.splashscreen)
 }

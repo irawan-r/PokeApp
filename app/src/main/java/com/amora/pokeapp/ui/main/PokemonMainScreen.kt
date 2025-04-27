@@ -18,10 +18,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.amora.pokeapp.repository.model.PokeMark
@@ -38,8 +38,7 @@ import com.amora.pokeapp.ui.utils.showInternetStatus
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @Composable
-fun PokemonMainScreen() {
-    val navController = rememberNavController()
+fun PokemonMainScreen(navController: NavHostController) {
     val colors = MaterialTheme.colorScheme
     val systemUiController = rememberSystemUiController()
 
@@ -66,7 +65,7 @@ fun PokemonMainScreen() {
 
     val onlineState by mainViewModel.isOnline.collectAsState()
 
-    var showSplash by remember { mutableStateOf(true) }
+    var isSplashDone by remember { mutableStateOf(false) }
 
     val isLoggedIn by authViewModel.isLoggedIn.collectAsStateWithLifecycle(initialValue = false)
 
@@ -77,7 +76,7 @@ fun PokemonMainScreen() {
 
     Scaffold(
         snackbarHost = {
-            if (!showSplash) {
+            if (isSplashDone) {
                 PokeSnackbar(snackbarHostState)
             }
         }
@@ -90,7 +89,6 @@ fun PokemonMainScreen() {
             composable(NavScreen.Splash.route) {
                 SplashScreen(
                     onSplashFinished = { finished ->
-                        showSplash = finished
                         val destination = if (isLoggedIn.orFalse()) {
                             NavScreen.MainRoot.route
                         } else {
@@ -99,6 +97,7 @@ fun PokemonMainScreen() {
                         navController.navigate(destination) {
                             popUpTo(NavScreen.Splash.route) { inclusive = true }
                         }
+                        isSplashDone = finished
                     }
                 )
             }
@@ -121,10 +120,11 @@ fun PokemonMainScreen() {
             )
         }
     }
-
-    LaunchedEffect(animatedStatusBarColor, animatedNavigationBarColor) {
+    LaunchedEffect(animatedStatusBarColor, animatedNavigationBarColor, isSplashDone) {
         systemUiController.setStatusBarColor(animatedStatusBarColor)
-        systemUiController.setNavigationBarColor(animatedNavigationBarColor)
+        if (isSplashDone) {
+            systemUiController.setNavigationBarColor(animatedNavigationBarColor)
+        }
     }
 }
 

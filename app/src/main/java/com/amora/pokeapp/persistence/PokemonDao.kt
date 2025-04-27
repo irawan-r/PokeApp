@@ -39,6 +39,7 @@ interface PokemonDao {
 		insertAbilityItem(pokemonCompleteDetails.abilities)
 	}
 
+	@Transaction
 	@Query("SELECT * FROM details WHERE remote_id = :pokeId OR name = :pokeName")
 	suspend fun getPokemonDetailsComplete(pokeId: Int, pokeName: String): PokemonCompleteDetails?
 

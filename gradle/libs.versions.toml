@@ -43,6 +43,7 @@ compose-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "
 compose-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
 constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version = "1.0.1" }
 navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
+splashscreen = { module = "androidx.core:core-splashscreen", version = "1.1.0-rc01" }
 
 material = { module = "com.google.android.material:material", version.ref = "material" }
 
